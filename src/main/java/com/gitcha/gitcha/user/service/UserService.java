@@ -6,8 +6,7 @@ import com.gitcha.gitcha.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,24 +14,23 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public UserDto createUser(String username) {
-        User user = User.builder().username(username).points(0).role("USER").build();
-        userRepository.save(user);
-        return new UserDto(user.getId(), user.getUsername(), user.getPoints());
+    public User createUser(String username, String email) {
+        User user = User.builder()
+                .username(username)
+                .points(0)
+                .build();
+        return userRepository.save(user);
     }
 
-    public List<UserDto> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(u -> new UserDto(u.getId(), u.getUsername(), u.getPoints()))
-                .collect(Collectors.toList());
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
-    public User findUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-    }
 
-    public void addPoints(User user, int points) {
+    public User addPoints(Long id, int points) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.setPoints(user.getPoints() + points);
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 }

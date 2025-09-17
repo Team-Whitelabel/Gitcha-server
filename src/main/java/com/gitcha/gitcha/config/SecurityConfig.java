@@ -1,26 +1,35 @@
 package com.gitcha.gitcha.config;
 
+import com.gitcha.gitcha.oauth.service.CustomOAuth2UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults()) // CORS 허용
-                .csrf().disable() // CSRF 비활성화 (API + JWT 사용 시)
+                .csrf().disable()
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/error", "/oauth2/**").permitAll()
+                        .requestMatchers("/", "/login", "/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth -> oauth
+                .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login") // 커스텀 로그인 페이지
-                        .defaultSuccessUrl("/api/users", true) // 로그인 성공 시 이동
+                        .defaultSuccessUrl("/", true)
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                )
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
                 );
 
         return http.build();

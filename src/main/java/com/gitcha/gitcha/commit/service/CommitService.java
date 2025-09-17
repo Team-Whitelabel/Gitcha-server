@@ -1,41 +1,34 @@
 package com.gitcha.gitcha.commit.service;
 
 import com.gitcha.gitcha.commit.domain.Commit;
-import com.gitcha.gitcha.commit.dto.CommitDto;
 import com.gitcha.gitcha.commit.repository.CommitRepository;
 import com.gitcha.gitcha.user.domain.User;
-import com.gitcha.gitcha.user.service.UserService;
+import com.gitcha.gitcha.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CommitService {
 
     private final CommitRepository commitRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
-    public CommitDto addCommit(Long userId, String message, int points) {
-        User user = userService.findUserById(userId);
+    public Commit createCommit(Long userId, String message) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         Commit commit = Commit.builder()
                 .user(user)
                 .message(message)
-                .points(points)
-                .committedAt(LocalDateTime.now())
                 .build();
-        commitRepository.save(commit);
-        userService.addPoints(user, points);
-        return new CommitDto(commit.getId(), commit.getMessage(), commit.getCommittedAt(), commit.getPoints(), user.getId());
+        return commitRepository.save(commit);
     }
 
-    public List<CommitDto> getCommitsByUser(Long userId) {
-        User user = userService.findUserById(userId);
-        return commitRepository.findByUser(user).stream()
-                .map(c -> new CommitDto(c.getId(), c.getMessage(), c.getCommittedAt(), c.getPoints(), user.getId()))
-                .collect(Collectors.toList());
+    public List<Commit> getCommitsByUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return commitRepository.findAllByUser(user);
     }
 }
